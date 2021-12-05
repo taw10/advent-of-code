@@ -65,22 +65,19 @@
 
 
 (define (line-wins l)
-  (equal? l '(X X X X X)))
+  (every
+    (lambda (x)
+      (eq? x 'X))
+    l))
 
 
 (define (transpose b)
-  (map list
-    (list-ref b 0)
-    (list-ref b 1)
-    (list-ref b 2)
-    (list-ref b 3)
-    (list-ref b 4)))
+  (apply map (lambda (. x) x) b))
 
 
 (define (board-wins? b)
-  (if (find line-wins b)
-    b
-    (find line-wins (transpose b))))
+  (or (find line-wins b)
+      (find line-wins (transpose b))))
 
 
 (define (sum-unmarked-numbers board)

@@ -1,7 +1,7 @@
 (use-modules
   (ice-9 format)
   (srfi srfi-1)
-  (srfi srfi-26)
+  (ice-9 match)
   (ice-9 textual-ports))
 
 
@@ -48,33 +48,6 @@
         (loop-y (1+ y))))))
 
 
-(define (make-first-index shape)
-  (make-list (length shape) 0))
-
-
-(define (inc-first l)
-  (cons (1+ (first l))
-        (cdr l)))
-
-
-(define (inc-indices old-indices shape)
-  (let ((new-indices
-          (fold
-            (lambda (n lim prev-c)
-              (let ((carry (car prev-c))
-                    (prev (cdr prev-c)))
-                (let ((nval (+ carry n)))
-                  (if (<= nval (second lim))
-                    (cons 0 (cons nval prev))
-                    (cons 1 (cons 0 prev))))))
-            (cons 1 '())
-            old-indices
-            shape)))
-    (if (> (car new-indices) 0)
-      #f
-      (reverse (cdr new-indices)))))
-
-
 (define (array-refl array indices)
   (apply array-ref array indices))
 
@@ -88,31 +61,16 @@
   (apply array-in-bounds? array indices))
 
 
-(define (array-index-fold proc init . arrays)
-  (let ((shape (array-shape (first arrays))))
-    (let loop ((indices (make-first-index shape))
-               (fold-val init))
-      (let ((next-fold-val (apply proc indices fold-val
-                                 (map (cut array-ref-list <> indices)
-                                      arrays))))
-        (let ((next-indices (inc-indices indices shape)))
-          (if next-indices
-            (loop next-indices next-fold-val)
-            next-fold-val))))))
-
-
-(define (min-unvisited distance-array visited-array)
-  (cdr
-    (array-index-fold
-      (lambda (coords prev distance visited)
-        (if visited
-          prev
-          (if (< distance (car prev))
-            (cons distance coords)
+(define (min-in-queue distance-array queue)
+  (car
+    (fold
+      (lambda (coords prev)
+        (let ((this-val (array-refl distance-array coords)))
+          (if (< this-val (cdr prev))
+            (cons coords this-val)
             prev)))
-      (cons (inf) #f)
-      distance-array
-      visited-array)))
+      (cons #f (inf))
+      queue)))
 
 
 (define (unvisited-neighbours point visited-arr)
@@ -142,30 +100,64 @@
         (dist (make-arrayl (inf) (array-shape grid)))
         (prev (make-arrayl #f (array-shape grid))))
     (array-setl! dist 0 start)
-    (let loop ((cur-point (min-unvisited dist visited)))
-      (if cur-point
-        (begin
-          (array-setl! visited #t cur-point)
-          (let ((cur-dist (array-refl dist cur-point)))
-            (for-each
-              (lambda (p)
-                (let ((new-dist (+ cur-dist (array-refl grid p))))
-                  (when (< new-dist (array-refl dist p))
-                    (array-setl! dist new-dist p)
-                    (array-setl! prev cur-point p))))
-              (unvisited-neighbours cur-point visited)))
-          (loop (min-unvisited dist visited)))
-        (propagate prev start (list finish))))))
+    (let loop ((queue (list start)))
+      (let ((cur-point (min-in-queue dist queue)))
+        (if cur-point
+          (begin
+            (array-setl! visited #t cur-point)
+            (let ((cur-dist (array-refl dist cur-point))
+                  (neigh (unvisited-neighbours cur-point visited)))
+              (for-each
+                (lambda (p)
+                  (let ((new-dist (+ cur-dist (array-refl grid p))))
+                    (when (< new-dist (array-refl dist p))
+                      (array-setl! dist new-dist p)
+                      (array-setl! prev cur-point p))))
+                neigh)
+              (loop (append (delete cur-point queue equal?) neigh))))
+          (propagate prev start (list finish)))))))
 
 
 (define (list-sum c)
   (reduce + #f c))
 
 
-(define (run-test)
+(define (lowest-total-risk grid start finish)
+  (list-sum
+    (map
+      (lambda (coords)
+        (array-refl grid coords))
+      (cdr (dijkstra grid start finish)))))
+
+
+(define (wrap-10-to-1 n)
+  (if (> n 9)
+    (- n 9)
+    n))
+
+(define (wrap-around n small-grid)
+  (let ((grid (make-arrayl 0 (map (lambda (r)
+                                    (* n (1+ (second r))))
+                                  (array-shape small-grid)))))
+    (array-index-map!
+      grid
+      (lambda (x y)
+        (wrap-10-to-1
+          (+ (array-ref small-grid
+                        (remainder x grid-w)
+                        (remainder y grid-h))
+             (quotient x grid-w)
+             (quotient y grid-h)))))
+    grid))
+
+
+(define (part1)
   (let ((grid (call-with-input-file "input" read-input)))
-    (list-sum
-      (map
-        (lambda (coords)
-          (array-refl grid coords))
-        (cdr (dijkstra grid '(0 0) '(99 99)))))))
+    (lowest-total-risk grid '(0 0) '(99 99))))
+
+
+(define (part2)
+  (let ((grid (call-with-input-file "input" read-input)))
+    (lowest-total-risk (wrap-around 5 grid)
+                       '(0 0)
+                       '(499 499))))

@@ -9,6 +9,7 @@
 ;;(define raw-input "04005AC33890")
 ;;(define raw-input "9C0141080250320F1802104A08")
 
+
 (define (char->binary c)
   (match c
          (#\0 '(0 0 0 0))
@@ -67,24 +68,16 @@
   (cons 'bin bits))
 
 
-(define (powers-of-2-rec n pwr so-far)
-  (if (> n 0)
-    (powers-of-2-rec
-      (- n 1)
-      (+ pwr 1)
-      (cons (expt 2 pwr)
-            so-far))
-    so-far))
-
-
-(define (powers-of-2 n)
-  (powers-of-2-rec n 0 '()))
+(define (bin->num-rec r pwr so-far)
+  (if (nil? r)
+    so-far
+    (bin->num-rec (cdr r)
+                  (* pwr 2)
+                  (+ so-far (* pwr (car r))))))
 
 
 (define (bin->num r)
-  (reduce + #f
-          (map * r
-               (powers-of-2 (length r)))))
+  (bin->num-rec (reverse r) 1 0))
 
 
 (define (read-packets r)
@@ -101,9 +94,8 @@
       ;; Given length of sub-packets
       ((= length-type 0)
        (let ((total-length (bin->num (get-bits! r 15))))
-         (let ((the-bits (get-bits! r total-length)))
-           (read-packets
-             (make-binary-reader-from-bits the-bits)))))
+         (read-packets
+           (make-binary-reader-from-bits (get-bits! r total-length)))))
 
       ;; Given number of sub-packets
       ((= length-type 1)
@@ -116,53 +108,42 @@
              packets)))))))
 
 
+(define (apply-to-subpackets r proc)
+  (apply proc (read-subpackets r)))
+
+
+(define (apply-comp-to-subpackets r proc)
+  (let ((sub-packets (read-subpackets r)))
+    (if (proc (first sub-packets)
+              (second sub-packets))
+      1 0)))
+
+
 (define (read-packet r)
   (let* ((version (bin->num (get-bits! r 3)))
          (type (bin->num (get-bits! r 3))))
 
-    (let ((sub-packets (if (eq? type 4)
-                         '()
-                         (read-subpackets r))))
+    (cond
 
-      (cond
+      ((eq? type 0) (apply-to-subpackets r +))
+      ((eq? type 1) (apply-to-subpackets r *))
+      ((eq? type 2) (apply-to-subpackets r min))
+      ((eq? type 3) (apply-to-subpackets r max))
 
-        ((eq? type 0)
-         (apply + sub-packets))
+      ((eq? type 4)
+       (let loop ((the-number '()))
+         (let* ((bits (get-bits! r 5))
+                (the-new-number (append the-number (cdr bits))))
+           (if (= (first bits) 1)
+             (loop the-new-number)
+             (bin->num the-new-number)))))
 
-        ((eq? type 1)
-         (apply * sub-packets))
+      ((eq? type 5) (apply-comp-to-subpackets r >))
+      ((eq? type 6) (apply-comp-to-subpackets r <))
+      ((eq? type 7) (apply-comp-to-subpackets r =))
 
-        ((eq? type 2)
-         (apply min sub-packets))
-
-        ((eq? type 3)
-         (apply max sub-packets))
-
-        ((eq? type 4)
-         (let loop ((the-number '()))
-           (let ((bits (get-bits! r 5)))
-             (let ((the-new-number (append the-number (cdr bits))))
-               (if (= (first bits) 1)
-                 (loop the-new-number)
-                 (bin->num the-new-number))))))
-
-        ((eq? type 5)
-         (if (> (first sub-packets)
-                (second sub-packets))
-           1 0))
-
-        ((eq? type 6)
-         (if (< (first sub-packets)
-                (second sub-packets))
-           1 0))
-
-        ((eq? type 7)
-         (if (= (first sub-packets)
-                (second sub-packets))
-           1 0))
-
-        (else
-          (format #t "Unrecognised packet type ~a / ~a\n" type sub-packets))))))
+      (else
+        (format #t "Unrecognised packet type ~a / ~a\n" type sub-packets)))))
 
 
 (let ((input (make-binary-reader raw-input)))

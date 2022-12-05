@@ -59,7 +59,25 @@ function read_stacks(fh)
 end
 
 
-function load(filename)
+function move_n_times!(from::Stack, to::Stack, n)
+    for _ in 1:n
+        pushfirst!(to, popfirst!(from))
+    end
+end
+
+
+function move_n_crates!(from::Stack, to::Stack, n)
+    substack = Vector{Char}()
+    for _ in 1:n
+        pushfirst!(substack, popfirst!(from))
+    end
+    for _ in 1:n
+        pushfirst!(to, popfirst!(substack))
+    end
+end
+
+
+function load(filename, move!)
     local s
     open(filename, "r") do fh
         s = read_stacks(fh)
@@ -68,16 +86,15 @@ function load(filename)
             n_to_move = parse(Int, sp[2])
             from = parse(Int, sp[4])
             to = parse(Int, sp[6])
-            println("_ ", n_to_move, " _ ", from, " _ ", to)
-            for i in 1:n_to_move
-                pushfirst!(s[to], popfirst!(s[from]))
-            end
+            move!(s[from], s[to], n_to_move)
         end
     end
     return s
 end
 
 
-v = load("input")
+v = load("input", move_n_times!)
 println("Part 1: ", map(x->x[1], v))
 
+v = load("input", move_n_crates!)
+println("Part 2: ", map(x->x[1], v))

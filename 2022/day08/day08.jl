@@ -3,13 +3,7 @@
 function strings_to_array(s)
     w = maximum(map(length, s))
     h = length(s)
-    arr = Array{Int}(undef, w, h)
-    for (y,l) in enumerate(s)
-        for (x,c) in enumerate(l)
-            arr[x, y] = parse(Int, c)
-        end
-    end
-    arr
+    [parse(Int, s[x][y]) for x=1:w, y=1:h]
 end
 
 

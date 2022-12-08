@@ -13,26 +13,9 @@ function strings_to_array(s)
 end
 
 
-function read_array(fh)
-    s = Vector{String}()
-    for line in eachline(fh)
-        push!(s, line)
-    end
-    return strings_to_array(s)
-end
-
-
-function load(filename)
-    open(filename, "r") do fh
-        s = read_array(fh)
-        return s
-    end
-end
-
-
 function visible1d(v, xc)
     lower = [h < v[xc] for h in v]
-    all(lower[1:xc-1]) || all(lower[xc+1:length(v)])
+    all(lower[begin:xc-1]) || all(lower[xc+1:end])
 end
 
 
@@ -41,28 +24,17 @@ function visible2d(v, xc, yc)
 end
 
 
-v = load("input")
-let nvis = 0
-    for x in 1:size(v, 1), y in 1:size(v, 2)
-        if visible2d(v, x, y)
-            nvis += 1
-        end
-    end
-    println("Part 1: ", nvis)
-end
-
-
 function viewdist(v, h)
     length(v) <  1 && return 0
-    l = findfirst(x->x>=h, v)
+    l = findfirst(>=(h), v)
     l === nothing && return length(v)
     return l
 end
 
 
 function viewdist1d(v, xc)
-    left = viewdist([v[x] for x in xc-1:-1:1], v[xc])
-    right = viewdist([v[x] for x in xc+1:length(v)], v[xc])
+    left = viewdist(v[xc-1:-1:begin], v[xc])
+    right = viewdist(v[xc+1:end], v[xc])
     left * right
 end
 
@@ -72,12 +44,10 @@ function viewdist2d(v, xc, yc)
 end
 
 
-let max = 0
-    for x in 1:size(v, 1), y in 1:size(v, 2)
-        d = viewdist2d(v, x, y)
-        if d > max
-            max = d
-        end
-    end
-    println("Part 2: ", max)
-end
+v = strings_to_array(readlines("input"))
+
+nvis = count(visible2d(v, x, y) for x in axes(v,1), y in axes(v,2))
+println("Part 1: ", nvis)
+
+max = maximum(viewdist2d(v, x, y) for x in axes(v,1), y in axes(v,2))
+println("Part 2: ", max)

@@ -52,22 +52,18 @@ let nvis = 0
 end
 
 
+function viewdist(v, h)
+    length(v) <  1 && return 0
+    l = findfirst(x->x>=h, v)
+    l === nothing && return length(v)
+    return l
+end
+
+
 function viewdist1d(v, xc)
-    dh = 0
-    for x in xc-1:-1:1
-        dh += 1
-        if v[x] >= v[xc]
-            break
-        end
-    end
-    dl = 0
-    for x in xc+1:length(v)
-        dl += 1
-        if v[x] >= v[xc]
-            break
-        end
-    end
-    dh*dl
+    left = viewdist([v[x] for x in xc-1:-1:1], v[xc])
+    right = viewdist([v[x] for x in xc+1:length(v)], v[xc])
+    left * right
 end
 
 

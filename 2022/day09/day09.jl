@@ -5,7 +5,7 @@ struct Cmd
     n
 end
 
-dvec = Dict("R"=>(1,0), "L"=>(-1,0), "U"=>(0,1), "D"=>(0,-1))
+dvec = Dict("R"=>[1,0], "L"=>[-1,0], "U"=>[0,1], "D"=>[0,-1])
 
 function parse_cmd(s)
     dir,n = split(s)
@@ -26,23 +26,23 @@ function knights_move(v)
 end
 
 function diagonal(v, n)
-    abs.(v)==(n,n)
+    abs.(v)==[n,n]
 end
 
 
 function tmove(diff)
     if one_space_jump(diff) || diagonal(diff, 2)
-        diff .÷ 2
+        diff.÷2
     elseif knights_move(diff)
         if abs(diff[1]) == 2
-            diff[1]÷2, diff[2]
+            [diff[1]÷2, diff[2]]
         elseif abs(diff[2]) == 2
-            diff[1], diff[2]÷2
+            [diff[1], diff[2]÷2]
         else
             error("Invalid knight's move ", diff)
         end
-    elseif adjacent(diff) || diagonal(diff, 1) || diff==(0,0)
-        0,0
+    elseif adjacent(diff) || diagonal(diff, 1) || diff==[0,0]
+        [0,0]
     else
         error("Unrecognised move ", diff)
     end
@@ -50,15 +50,15 @@ end
 
 
 function move(dir, head, tail)
-    head = dir .+ head
-    tail = tail .+ tmove(head .- tail)
+    head = dir + head
+    tail = tail + tmove(head - tail)
     return head, tail
 end
 
 
 v = map(parse_cmd, readlines("input"))
 
-let head = (1000,1000), tail = head, grid = zeros(Bool, 2000,2000)
+let head = [1000,1000], tail = head, grid = zeros(Bool, 2000,2000)
     grid[tail...] = 1
     for cmd in v
         for i in 1:cmd.n
@@ -71,14 +71,14 @@ end
 
 
 function move_rope(dir, rope)
-    rope[1] = rope[1] .+ dir
+    rope[1] = rope[1] + dir
     for i in 2:length(rope)
-        rope[i] = rope[i] .+ tmove(rope[i-1] .- rope[i])
+        rope[i] = rope[i] + tmove(rope[i-1] - rope[i])
     end
     rope
 end
 
-let rope = fill((1000,1000),10), grid = zeros(Bool, 2000,2000)
+let rope = fill([1000,1000],10), grid = zeros(Bool, 2000,2000)
     grid[rope[10]...] = true
     for cmd in v
         for i in 1:cmd.n

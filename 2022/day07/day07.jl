@@ -6,10 +6,9 @@ struct INode
     name
     size::Union{Int,Nothing}      # if nothing, this is a directory
     children::Vector{INode}
-    parent::Union{INode,Nothing}  # if nothing, this is the root
 end
 
-INode(name, size, parent) = INode(name, size, INode[], parent)
+INode(name, size) = INode(name, size, INode[])
 isdir(n) = (n.size === nothing)
 
 
@@ -21,22 +20,19 @@ end
 
 
 function load(filename)
-    root = INode("/", nothing, nothing)
-    cur = root
-    open(filename, "r") do fh
-        for line in eachline(fh)
-            @match split(line) begin
-                ["\$", "cd", "/"]  => (cur = root)
-                ["\$", "cd", ".."] => (cur = cur.parent)
-                ["\$", "cd", n]    => (cur = find_subdir(cur, n))
-                ["dir", n]         => push!(cur.children, INode(n, nothing, cur))
-                ["\$", "ls"]       => false
-                [sz, n]            => push!(cur.children, INode(n, parse(Int, sz), cur))
-                _                  => error("Didn't understand ", line)
-            end
+    path = [INode("/", nothing)]
+    for line in readlines(filename)
+        @match split(line) begin
+            ["\$", "cd", "/"]  => (path = [first(path)])
+            ["\$", "cd", ".."] => pop!(path)
+            ["\$", "cd", n]    => push!(path, find_subdir(last(path), n))
+            ["dir", n]         => push!(last(path).children, INode(n, nothing))
+            ["\$", "ls"]       => false
+            [sz, n]            => push!(last(path).children, INode(n, parse(Int, sz)))
+            _                  => error("Didn't understand ", line)
         end
     end
-    root
+    first(path)
 end
 
 

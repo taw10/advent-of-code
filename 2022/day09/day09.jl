@@ -13,33 +13,25 @@ function parse_cmd(s)
 end
 
 
-function overlap(v)
-    (v[1]==0 && v[2]==0) || (v[1]==0 && v[2]==0)
-end
-
-function one_space_move(v)
+function adjacent(v)
     (v[1]==0 && abs(v[2])==1) || (abs(v[1])==1 && v[2]==0)
 end
 
-function diagonal_move(v)
-    (abs(v[1])==1 && abs(v[2])==1) || (abs(v[1])==1 && abs(v[2])==1)
-end
-
-function two_space_move(v)
+function one_space_jump(v)
     (v[1]==0 && abs(v[2])==2) || (abs(v[1])==2 && v[2]==0)
 end
-
 
 function knights_move(v)
     (abs(v[1])==1 && abs(v[2])==2) || (abs(v[1])==2 && abs(v[2])==1)
 end
 
-function two_space_diagonal(v)
-    (abs(v[1])==2 && abs(v[2])==2) || (abs(v[1])==2 && abs(v[2])==2)
+function diagonal(v, n)
+    abs.(v)==(n,n)
 end
 
+
 function tmove(diff)
-    if two_space_move(diff) || two_space_diagonal(diff)
+    if one_space_jump(diff) || diagonal(diff, 2)
         diff .÷ 2
     elseif knights_move(diff)
         if abs(diff[1]) == 2
@@ -49,7 +41,7 @@ function tmove(diff)
         else
             error("Invalid knight's move ", diff)
         end
-    elseif one_space_move(diff) || diagonal_move(diff) || overlap(diff)
+    elseif adjacent(diff) || diagonal(diff, 1) || diff==(0,0)
         0,0
     else
         error("Unrecognised move ", diff)
@@ -67,31 +59,31 @@ end
 v = map(parse_cmd, readlines("input"))
 
 let head = (1000,1000), tail = head, grid = zeros(Bool, 2000,2000)
-    grid[tail[1],tail[2]] = 1
+    grid[tail...] = 1
     for cmd in v
         for i in 1:cmd.n
             head, tail = move(cmd.dir, head, tail)
-            grid[tail[1],tail[2]] = true
+            grid[tail...] = true
         end
     end
     println("Part 1: ", count(grid))
 end
 
 
-function move_snake(dir, snake)
-    snake[1] = snake[1] .+ dir
-    for i in 2:length(snake)
-        snake[i] = snake[i] .+ tmove(snake[i-1] .- snake[i])
+function move_rope(dir, rope)
+    rope[1] = rope[1] .+ dir
+    for i in 2:length(rope)
+        rope[i] = rope[i] .+ tmove(rope[i-1] .- rope[i])
     end
-    snake
+    rope
 end
 
-let snake = fill((1000,1000),10), grid = zeros(Bool, 2000,2000)
-    grid[snake[10][1],snake[10][2]] = true
+let rope = fill((1000,1000),10), grid = zeros(Bool, 2000,2000)
+    grid[rope[10]...] = true
     for cmd in v
         for i in 1:cmd.n
-            snake = move_snake(cmd.dir, snake)
-            grid[snake[10][1],snake[10][2]] = true
+            rope = move_rope(cmd.dir, rope)
+            grid[rope[10]...] = true
         end
     end
     println("Part 2: ", count(grid))

@@ -1,28 +1,33 @@
 # Advent of code 2022, day 10
 
-function parse_cmd(s)
-    s = split(s)
-    if s[1] == "noop"
-        1,0
-    else
-        2,parse(Int, s[2])
+function make_xvals(s)
+    r = Int[]
+    x = 1
+    for line in s
+        cmd = split(line)
+        if cmd[1] == "noop"
+            push!(r, x)
+        else
+            push!(r, x)
+            push!(r, x)
+            x += parse(Int, cmd[2])
+        end
     end
+    r
 end
 
 
-input = map(parse_cmd, readlines("input"))
+xvals = make_xvals(readlines("input"))
+println("Part 1: ", sum([i*xvals[i] for i in 20:40:220]))
 
-seek = [i for i in 20:40:220]
-let cycle = 1, signal = 1, total = 0
-    for cmd in input
-        println(cycle, " : ", signal)
-        if length(seek) > 0 && cycle+cmd[1] > seek[1]
-            println(seek[1], " * ", signal, " = ", seek[1]*signal)
-            total += seek[1]*signal
-            popfirst!(seek)
+println("Part 2:")
+for y in 1:6
+    for x in 1:40
+        if abs((x-1)-xvals[x+(y-1)*40])<=1
+            print("#")
+        else
+            print(".")
         end
-        cycle += cmd[1]
-        signal += cmd[2]
     end
-    println("Part 1: ", total)
+    println("")
 end

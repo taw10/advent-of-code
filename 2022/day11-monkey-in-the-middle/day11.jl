@@ -15,7 +15,7 @@ example = [Monkey([79,98], x->x*19, 23, 2, 3, 0),
            Monkey([74], x->x+3, 17, 0, 1, 0)]
 
 monkeys = [Monkey([64,89,65,95], x->x*7, 3, 4, 1, 0),
-           Monkey([76,66,74,87,70,56,51,66], x->x+15, 13, 7, 3, 0),
+           Monkey([76,66,74,87,70,56,51,66], x->x+5, 13, 7, 3, 0),
            Monkey([91,60,63], x->x*x, 2, 6, 5, 0),
            Monkey([92,61,79,97,79], x->x+6, 11, 2, 6, 0),
            Monkey([93,54], x->x*11, 5, 1, 7, 0),
@@ -30,6 +30,7 @@ function monkey_business_level(monkeys_in, rounds, ndiv)
         for monkey in monkeys
             for item in monkey.items
                 item = monkey.worry_op(item) ÷ ndiv
+                item = item % prod(map(x->x.worry_test, monkeys))
                 if item % monkey.worry_test == 0
                     push!(monkeys[monkey.throw_true+1].items, item)
                 else
@@ -44,6 +45,6 @@ function monkey_business_level(monkeys_in, rounds, ndiv)
     business[1] * business[2]
 end
 
-println("Part 1: ", monkey_business_level(example, 20, 3))
-#println("Part 2: ", monkey_business_level(example, 20, 1))
+println("Part 1: ", monkey_business_level(monkeys, 20, 3))
+println("Part 2: ", monkey_business_level(monkeys, 10000, 1))
 

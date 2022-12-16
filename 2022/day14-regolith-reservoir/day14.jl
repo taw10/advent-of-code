@@ -1,5 +1,6 @@
 # Advent of code 2022, day 14: Regolith Reservoir
 
+using OffsetArrays
 
 function parsecoords(s)
     xs,ys = split(s, ",")
@@ -20,7 +21,8 @@ end
 
 
 function readinput(filename)
-    arr = zeros(Int8, 1000, 1000)
+    qarr = zeros(Int8, 1000, 1000)
+    arr = OffsetArray(qarr, 0:999, 0:999)
     floor = 0
     for line in readlines(filename)
         points = split(line, " -> ")
@@ -60,3 +62,12 @@ let (arr,floor) = readinput("input")
 end
 
 
+let (arr,floor) = readinput("input")
+    arr[:,floor+2] .= 1
+    i = 0
+    while arr[500,0] == 0
+        dropgrain(arr, CartesianIndex(500,0), floor+2)
+        i += 1
+    end
+    println("Part 2: ", i)
+end

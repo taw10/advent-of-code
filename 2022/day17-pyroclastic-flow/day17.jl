@@ -57,24 +57,53 @@ function drop_rock!(board, cmds, rock, h)
 end
 
 
-cmds = Channel() do ch
-    for i in Iterators.cycle(split(readlines("input")[1], ""))
-        if i == "<"
-            j = [-1,0]
-        elseif i == ">"
-            j = [1,0]
-        else
-            println("??? ", i)
+function highest_filled(board, h)
+    for y in h:-1:1
+        if all(board[:,y] .== 1)
+            return y
         end
-        put!(ch, j)
     end
+    nothing
 end
 
-board = zeros(Int64, 7, 2022*4)
 
-let h = 0
-    for r in 1:2022
+function height_after_rocks(n)
+
+    cmds = Channel() do ch
+        for i in Iterators.cycle(split(readlines("input")[1], ""))
+            if i == "<"
+                j = [-1,0]
+            elseif i == ">"
+                j = [1,0]
+            else
+                println("??? ", i)
+            end
+            put!(ch, j)
+        end
+    end
+
+    h = 0
+    scroll = 0
+    bh = 100000
+    board = zeros(Int64, 7, bh)
+
+    for r in 1:n
         h = drop_rock!(board, cmds, rocks[1+(r-1)%5], h)
+        row = highest_filled(board, h)
+        if row !== nothing
+            #println("After ", r, " rocks, row ", row, " is full.  Height is ", h)
+            nr = h - row
+            board[:,1:nr] = board[:,row+1:h]
+            board[:,nr+1:h] .= 0
+            scroll += row
+            h -= row
+        end
     end
-    println("Part 1: ", h)
+
+    h+scroll
+
 end
+
+
+println("Part 1: ",  height_after_rocks(2022))
+println("Part 2: ",  height_after_rocks(1000000000000))

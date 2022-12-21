@@ -8,8 +8,8 @@ end
 
 struct MathMonkey <: Monkey
     op
-    v1
-    v2
+    v1::Monkey
+    v2::Monkey
 end
 
 
@@ -28,31 +28,31 @@ function op(str)
 end
 
 
-function parseop(str)
-    l = split(str)
+function parsemonkey(name, lines)
+    l = split(lines[name])
     if length(l) == 1
         NumMonkey(parse(Int, l[1]))
     else
-        MathMonkey(op(l[2]), l[1], l[3])
+        MathMonkey(op(l[2]), parsemonkey(l[1], lines), parsemonkey(l[3], lines))
     end
 end
 
 
 function readmonkeys(filename)
-    monkeys = Dict{AbstractString,Monkey}()
+    lines = Dict{AbstractString,AbstractString}()
     for line in readlines(filename)
         name, op = split(line, ":")
-        monkeys[name] = parseop(op)
+        lines[name] = op
     end
-    monkeys
+    parsemonkey("root", lines)
 end
 
 
-eval_monkey(m::NumMonkey, _) = m.val
-
-function eval_monkey(m::MathMonkey, monkeys)
-    m.op(eval_monkey(monkeys[m.v1], monkeys), eval_monkey(monkeys[m.v2], monkeys))
+eval_monkey(m::NumMonkey) = m.val
+function eval_monkey(m::MathMonkey)
+    m.op(eval_monkey(m.v1), eval_monkey(m.v2))
 end
 
-v = readmonkeys("input")
-println("Part 1: ", eval_monkey(v["root"], v))
+root = readmonkeys("input")
+println("Part 1: ", eval_monkey(root))
+println("Part 2: ", eval_monkey(root))

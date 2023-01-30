@@ -70,16 +70,6 @@ function in_any_range(ranges, x)
 end
 
 
-function is_sensor(sensors, x, y)
-    for s in sensors
-        if s.cbx == x && s.cby == y
-            return true
-        end
-    end
-    return false
-end
-
-
 function positions_without_beacon(sensors, y)
 
     ranges = UnitRange{Int64}[]
@@ -90,11 +80,18 @@ function positions_without_beacon(sensors, y)
         end
     end
 
+    sx = Set{Int64}()
+    for sensor in sensors
+        if sensor.cby == y
+            push!(sx, sensor.cbx)
+        end
+    end
+
     x1 = minimum([a.start for a in ranges])
     x2 = maximum([a.stop for a in ranges])
     n = 0
     for x in x1:x2
-        if in_any_range(ranges, x) && !is_sensor(sensors, x, y)
+        if in_any_range(ranges, x) && !(x in sx)
             n += 1
         end
     end

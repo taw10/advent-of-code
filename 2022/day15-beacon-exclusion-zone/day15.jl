@@ -70,8 +70,7 @@ function in_any_range(ranges, x)
 end
 
 
-function positions_without_beacon(sensors, y)
-
+function sensor_ranges(sensors, y)
     ranges = UnitRange{Int64}[]
     for sensor in sensors
         r = project_to_row(sensor, y)
@@ -79,6 +78,13 @@ function positions_without_beacon(sensors, y)
             push!(ranges, r)
         end
     end
+    ranges
+end
+
+
+function positions_without_beacon(sensors, y)
+
+    ranges = sensor_ranges(sensors, y)
 
     sx = Set{Int64}()
     for sensor in sensors
@@ -101,5 +107,35 @@ function positions_without_beacon(sensors, y)
 end
 
 
+function beacon_in_row(sensors, y, size)
+
+    ranges = sensor_ranges(sensors, y)
+
+    n = 0
+    for x in 1:size
+        if !in_any_range(ranges, x)
+            return x
+        end
+    end
+
+    false
+
+end
+
+
+function beacon_pos(sensors, size)
+    for y in 1:size
+        x = beacon_in_row(sensors, y, size)
+        if x !== false
+            return x,y
+        end
+    end
+    return false
+end
+
+
 println("Part 1 example: ", positions_without_beacon(example, 10))
 println("Part 1: ", positions_without_beacon(sensors, 2000000))
+
+println("Part 2 example: ", beacon_pos(example, 20))
+println("Part 2: ", beacon_pos(sensors, 4000000))

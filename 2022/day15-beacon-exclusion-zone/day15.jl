@@ -1,10 +1,45 @@
 # Advent of code 2022, day 15
 
+import Base.push!
+import Base.contains
+import Base.length
+
 struct Sensor
     x
     y
     cbx
     cby
+end
+
+mutable struct RangeSet
+    ranges
+end
+
+RangeSet() = RangeSet(Vector{UnitRange}())
+length(rset::RangeSet) = length(rset.ranges)
+
+function overlap(a::UnitRange, b::UnitRange)
+    !((a.stop+1 < b.start) || (b.stop+1 < a.start))
+end
+
+function push!(rset::RangeSet, x::UnitRange)
+    if x != 0:0
+        keep = Vector{UnitRange}()
+        for r in rset.ranges
+            if overlap(r, x)
+                x = min(r.start, x.start) : max(r.stop, x.stop)
+            else
+                push!(keep, r)
+            end
+        end
+        push!(keep, x)
+        rset.ranges = keep
+    end
+    rset
+end
+
+function entire_range(rset::RangeSet)
+    minimum([x.start for x in rset.ranges]) : maximum([x.stop for x in rset.ranges])
 end
 
 sensors = [Sensor(2391367, 3787759, 2345659, 4354867),
@@ -53,15 +88,15 @@ function project_to_row(sensor, y)
     yoffs = abs(y - sensor.y)
     this_rad = rad - yoffs
     if this_rad < 0
-        return false
+        return 0:0
     else
         return sensor.x-this_rad:sensor.x+this_rad
     end
 end
 
 
-function in_any_range(ranges, x)
-    for r in ranges
+function contains(rset::RangeSet, x)
+    for r in rset.ranges
         if x in r
             return true
         end
@@ -71,12 +106,10 @@ end
 
 
 function sensor_ranges(sensors, y)
-    ranges = UnitRange{Int64}[]
+    ranges = RangeSet()
     for sensor in sensors
         r = project_to_row(sensor, y)
-        if r !== false
-            push!(ranges, r)
-        end
+        push!(ranges, r)
     end
     ranges
 end
@@ -93,11 +126,9 @@ function positions_without_beacon(sensors, y)
         end
     end
 
-    x1 = minimum([a.start for a in ranges])
-    x2 = maximum([a.stop for a in ranges])
     n = 0
-    for x in x1:x2
-        if in_any_range(ranges, x) && !(x in sx)
+    for x in entire_range(ranges)
+        if contains(ranges, x) && !(x in sx)
             n += 1
         end
     end
@@ -111,10 +142,11 @@ function beacon_in_row(sensors, y, size)
 
     ranges = sensor_ranges(sensors, y)
 
-    n = 0
-    for x in 1:size
-        if !in_any_range(ranges, x)
-            return x
+    if length(ranges) > 1
+        for x in 1:size
+            if !contains(ranges, x)
+                return x
+            end
         end
     end
 
@@ -134,8 +166,10 @@ function beacon_pos(sensors, size)
 end
 
 
+freq(x, y) = 4000000 * x + y
+
 println("Part 1 example: ", positions_without_beacon(example, 10))
 println("Part 1: ", positions_without_beacon(sensors, 2000000))
 
-println("Part 2 example: ", beacon_pos(example, 20))
-println("Part 2: ", beacon_pos(sensors, 4000000))
+println("Part 2 example: ", freq(beacon_pos(example, 20)...))
+println("Part 2: ", freq(beacon_pos(sensors, 4000000)...))

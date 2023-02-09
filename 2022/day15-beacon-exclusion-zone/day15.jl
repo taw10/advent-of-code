@@ -5,26 +5,26 @@ import Base.contains
 import Base.length
 
 struct Sensor
-    x
-    y
-    cbx
-    cby
+    x::Int64
+    y::Int64
+    cbx::Int64
+    cby::Int64
 end
 
 mutable struct RangeSet
-    ranges
+    ranges::Vector{UnitRange{Int64}}
 end
 
 RangeSet() = RangeSet(Vector{UnitRange}())
 length(rset::RangeSet) = length(rset.ranges)
 
-function overlap(a::UnitRange, b::UnitRange)
+function overlap(a, b)
     !((a.stop+1 < b.start) || (b.stop+1 < a.start))
 end
 
 function push!(rset::RangeSet, x::UnitRange)
     if x != 0:0
-        keep = Vector{UnitRange}()
+        keep = Vector{UnitRange{Int64}}()
         for r in rset.ranges
             if overlap(r, x)
                 x = min(r.start, x.start) : max(r.stop, x.stop)

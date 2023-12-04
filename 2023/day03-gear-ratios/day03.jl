@@ -39,29 +39,45 @@ function findnum(line)
 end
 
 
+function gears(instars)
+
+    out = []
+    stars = sort(instars)
+    for idx in 1:length(stars)-1
+        if stars[idx][1] == stars[idx+1][1]
+            push!(out, stars[idx][2]*stars[idx+1][2])
+        end
+    end
+
+    out
+end
+
+
 issymbol(ch) = (ch != '.') && !isdigit(ch)
 
-function symboladj(grid, xr, y)
+function adjacent(xr, y, w, h)
+
+    coords = []
 
     # Row above
     if y>1
         for x in max(xr.start-1, 1):min(xr.stop+1,size(grid)[1])
-            issymbol(grid[x,y-1]) && return true
+            push!(coords, (x,y-1))
         end
     end
 
     # Row below
     if y<size(grid)[2]
         for x in max(xr.start-1, 1):min(xr.stop+1,size(grid)[1])
-            issymbol(grid[x,y+1]) && return true
+            push!(coords, (x,y+1))
         end
     end
 
     # To the left and right
-    xr.start>1 && issymbol(grid[xr.start-1,y]) && return true
-    xr.stop<size(grid)[1] && issymbol(grid[xr.stop+1,y]) && return true
+    xr.start>1 && push!(coords, (xr.start-1,y))
+    xr.stop<size(grid)[1] && push!(coords, (xr.stop+1,y))
 
-    return false
+    return coords
 
 end
 
@@ -71,14 +87,29 @@ grid = read2d("input")
 let total = 0
     for y in 1:size(grid)[2]
         while (s = findnum(view(grid, :,y))) != false
-            print("Number at ", s)
-            if symboladj(grid, s[2], y)
+            if any(c->issymbol(grid[c...]), adjacent(s[2], y, size(grid)...))
                 total += s[1]
-                println("  valid")
-            else
-                println("")
             end
         end
     end
     println("Part 1: ", total)
+end
+
+
+grid = read2d("input")
+
+let stars = []
+    for y in 1:size(grid)[2]
+        while (s = findnum(view(grid, :,y))) != false
+            let adj = adjacent(s[2], y, size(grid)...)
+                l = findall(c->grid[c...]=='*', adj)
+                for lx in l
+                    push!(stars, (adj[lx], s[1]))
+                end
+            end
+        end
+    end
+
+    println("Part 2: ", sum(gears(stars)))
+
 end

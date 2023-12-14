@@ -51,7 +51,7 @@ function runmap(ranges, x)
     end
 end
 
-seeds,maps = readinput("example")
+seeds,maps = readinput("input")
 locations = map(seeds) do x
     for m in maps
         x = runmap(m, x)
@@ -61,62 +61,62 @@ end
 println("Part 1: ", minimum(locations))
 
 
-function runmaprange(ranges, xranges)
+function runmaprange(themap, xranges)
 
-    for omap in ranges
+    targetranges = []
+    for rangemapping in themap
 
-        newranges = []
+        srange = rangemapping[1]
+        drange = rangemapping[2]
+        offs = drange.start - srange.start
+
+        stilltomap = []
+
         for xrange in xranges
 
-            srange = omap[1]
-            drange = omap[2]
-            offs = drange.start - srange.start
-
-            println(xrange, "    ", srange, "   ->  ", offs)
-    
             if xrange.stop < srange.start
                 # Case 1: range fully below map
-                push!(newranges, xrange)
-    
+                push!(stilltomap, xrange)
+
             elseif xrange.start > srange.stop
                 # Case 2: range fully above map
-                push!(newranges, xrange)
-    
+                push!(stilltomap, xrange)
+
             elseif xrange.start<srange.start && srange.start<=xrange.stop<=srange.stop
                 # Case 3: range overlaps from below map to within
-                push!(newranges, xrange.start:srange.start-1)
-                push!(newranges, (srange.start:xrange.stop) .+ offs)
-    
+                push!(stilltomap, xrange.start:srange.start-1)
+                push!(targetranges, (srange.start:xrange.stop) .+ offs)
+
             elseif srange.start<=xrange.start<=srange.stop && xrange.stop>srange.stop
                 # Case 4: range overlaps from within map to above
-                push!(newranges, (xrange.start:srange.stop) .+ offs)
-                push!(newranges, srange.stop+1:xrange.stop)
-    
+                push!(targetranges, (xrange.start:srange.stop) .+ offs)
+                push!(stilltomap, srange.stop+1:xrange.stop)
+
             elseif srange.start<=xrange.start && srange.stop>=xrange.stop
                 # Case 5: range fully within map
-                push!(newranges, xrange .+ offs)
-    
+                push!(targetranges, xrange .+ offs)
+
             elseif xrange.start<=srange.start && xrange.stop>=srange.stop
                 # Case 6: range fully surrounds map
-                push!(newranges, xrange.start:srange.start-1)
-                push!(newranges, srange .+ offs)
-                push!(newranges, srange.stop+1:xrange.stop)
-                
+                push!(stilltomap, xrange.start:srange.start-1)
+                push!(targetranges, srange .+ offs)
+                push!(stilltomap, srange.stop+1:xrange.stop)
+
             else
                 println("Couldn't figure out case: ", xrange, " ", srange)
             end
 
-
         end
-        println("       ----> ", newranges)
-        xranges = newranges
+
+        # Try the next map on the remaining source ranges
+        xranges = stilltomap
 
     end
-    return xranges
+    append!(targetranges, xranges)
+    return targetranges
 end
 
 seedranges = [seeds[i]:seeds[i]+seeds[i+1]-1 for i in 1:2:length(seeds)]
-println(seedranges)
 
 let xranges = seedranges
     for m in maps

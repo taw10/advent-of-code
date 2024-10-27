@@ -1,0 +1,9 @@
+with "../aocutils/aoc_utils.gpr";
+
+project Day01 is
+
+   for Main use ("day01");
+   for Source_Dirs use (".");
+   for Object_Dir use "obj/";
+
+end Day01;
